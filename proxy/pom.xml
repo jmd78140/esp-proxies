@@ -1,0 +1,145 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>ai.learningsystems.gloobermkp</groupId>
+		<artifactId>espproxies</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+	<artifactId>proxy</artifactId>
+	<name>Proxy</name>
+	<description>Implements the proxy core and services handler plugins loader</description>
+
+	<!-- Properties defining project variables, including Java and Spring
+	versions -->
+	<properties>
+		<spring-cloud.version>2024.0.0-RC1</spring-cloud.version>
+		<!-- Managed version for Resilience4j, commented out as it is managed elsewhere -->
+		<!-- spring-starter-resilience4j.version>3.2.0-RC1<spring-starter-resilience4j.version -->
+		<spring-webflux.version>6.2.0</spring-webflux.version>
+		<pf4j.version>3.13.0</pf4j.version>
+		<spring-starter-actuator.version>3.4.0</spring-starter-actuator.version>
+		<spring-boot-maven-plugin.version>3.4.0</spring-boot-maven-plugin.version>
+	</properties>
+
+	<!-- Dependencies section -->
+	<dependencies>
+
+		<!--
+		https://mvnrepository.com/artifact/org.springframework/spring-webflux -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webflux</artifactId>
+			<version>${spring-webflux.version}</version>
+		</dependency>
+
+		<!-- Spring Actuator dependency for monitoring and management of
+		applications -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+			<version>${spring-starter-actuator.version}</version>
+		</dependency>
+
+		<!-- Circuit breaker implementation using Resilience4j, version managed by parent -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.pf4j/pf4j -->
+		<dependency>
+    		<groupId>org.pf4j</groupId>
+    		<artifactId>pf4j</artifactId>
+    		<version>${pf4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+			<artifactId>domains-share</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+			<artifactId>plugin-api</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+			<artifactId>plugin-shared-interfaces</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
+	<!-- Dependency Management section for Spring Cloud dependencies -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<!-- Build plugins configuration -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot-maven-plugin.version}</version>
+			</plugin>
+		</plugins>
+	</build>
+
+	<!-- Repositories for dependency resolution -->
+	<repositories>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>https://repo.spring.io/snapshot</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+	</repositories>
+
+	<!-- Plugin repositories for plugin dependency resolution -->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>https://repo.spring.io/snapshot</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</pluginRepository>
+	</pluginRepositories>
+
+</project>

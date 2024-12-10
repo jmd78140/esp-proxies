@@ -1,0 +1,7 @@
+server:
+  # server Listening port
+  port: 8586
+proxy:
+  plugins:
+    # The folder plugins service handlers for proxy resides 
+    folderpath: /home/jarvis/_tmptests/espproxies/proxy/plugins/openai-chat-plugin

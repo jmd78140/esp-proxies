@@ -1,0 +1,15 @@
+serviceProperties:
+  serviceName: "/openai/v1/chat/completions"
+  targetServiceBaseUrl: "https://api.openai.com/"
+  targetServiceEndPoint: "/v1/chat/completions"
+  customHeaders:
+    Authorization: "Bearer YOUR_API_KEY"
+  circuitBreakerConfiguration:
+    slidingWindowSize: 10
+    failureRateThreshold: 50
+    waitDurationInOpenState: "PT10S"
+    permittedNumberOfCallsInHalfOpenState: 3
+  rateLimiterConfiguration:
+    limitForPeriod: 5
+    timeoutDuration: "PT1S"
+    limitRefreshPeriod: "PT1S"

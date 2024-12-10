@@ -1,0 +1,98 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>ai.learningsystems.gloobermkp</groupId>
+    <artifactId>espproxies</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+ 
+  <groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+  <artifactId>openai-chat-completion-plugin</artifactId>
+  <name>OpenAIChatCompletionPlugin</name>
+  <description>This is a espproxies proxy plugin to interact with OpenAI Chat completion</description>
+  <packaging>jar</packaging>
+ 
+  <properties>
+	    <maven-assembly-plugin.version>3.4.2</maven-assembly-plugin.version>
+	    <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+	  	<maven-compiler-plugin.source.version>20</maven-compiler-plugin.source.version>
+	  	<maven-compiler-plugin.target.version>20</maven-compiler-plugin.target.version>
+	  	<!--> Pf4j <-->
+	  	<pf4j.version>3.13.0</pf4j.version>
+	  	<!--> Proxy / Plugin shared interfaces <-->
+	  	<plugin-shared-interfaces.version>0.0.1-SNAPSHOT</plugin-shared-interfaces.version>
+        <!--> Injected in plugin Manifest <-->
+        <plugin.id>openai-chat-completion-plugin</plugin.id>
+        <plugin.class>ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completion.OpenAIChatCompletionPlugin</plugin.class>
+        <plugin.version>0.0.1</plugin.version>
+        <plugin.config-path>config/service-config.yml</plugin.config-path>
+        <plugin.provider>learningssystems.ai</plugin.provider>
+        <plugin.dependencies/>
+  </properties>
+  
+   <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.pf4j/pf4j -->
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+        </dependency>
+        
+        <dependency>
+			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+			<artifactId>plugin-shared-interfaces</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+   </dependencies>
+  
+  <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven-assembly-plugin.version}</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>
+                            src/main/resources/assembly.xml
+                        </descriptor>
+                    </descriptors>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+						    <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Plugin-Id>${plugin.id}</Plugin-Id>
+                            <Plugin-Class>${plugin.class}</Plugin-Class>
+                            <Plugin-Version>${plugin.version}</Plugin-Version>
+                            <Plugin-Provider>${plugin.provider}</Plugin-Provider>
+                            <Plugin-Dependencies>${plugin.dependencies}</Plugin-Dependencies>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${maven-compiler-plugin.source.version}</source>
+                    <target>${maven-compiler-plugin.target.version}</target>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
