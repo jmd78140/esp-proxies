@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>ai.learningsystems.gloobermkp</groupId>
-		<artifactId>espproxies</artifactId>
+		<groupId>ai.learningsystems.gloobermkp.service-providers</groupId>
+		<artifactId>esp-proxies</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 
-	<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+	<groupId>ai.learningsystems.gloobermkp.services-providers.esp-proxies</groupId>
 	<artifactId>proxy</artifactId>
 	<name>Proxy</name>
 	<description>Implements the proxy core and services handler plugins loader</description>
@@ -55,24 +55,16 @@
 		<dependency>
     		<groupId>org.pf4j</groupId>
     		<artifactId>pf4j</artifactId>
-    		<version>${pf4j.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
-			<artifactId>domains-share</artifactId>
+			<groupId>ai.learningsystems.gloobermkp.shared-libs</groupId>
+			<artifactId>external-commons</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
-			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
-			<artifactId>plugin-api</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-
-
-		<dependency>
-			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+			<groupId>ai.learningsystems.gloobermkp.service-providers.esp-proxies</groupId>
 			<artifactId>plugin-shared-interfaces</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>

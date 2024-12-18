@@ -2,15 +2,13 @@ package ai.learningsystems.gloobermkp.espproxies.proxy.service.proxycore;
 
 
 import java.net.URI;
-import java.util.Map;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -22,9 +20,9 @@ import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.service
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandlerregistry.IServiceHandlerRegistry;
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandlerregistry.ServiceHandlerConfiguration;
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandlerregistry.ServiceHandlerConfiguration.ServiceProperties;
+import ai.learningsystems.gloobermkp.external.commons.domains.web.RequestModifier;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.RateLimiter;
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -34,7 +32,6 @@ import reactor.core.publisher.Mono;
  * Generic proxy service for redirecting requests to third-party services and
  * adding calculated usage metrics in the HTTP response header.
  */
-@Slf4j
 @Service
 public class GenericProxyService implements IProxyService
 {
@@ -76,11 +73,11 @@ public class GenericProxyService implements IProxyService
     }
 
 
-    public boolean isStreamReplyRequested(final String fullEndpoint, final HttpHeaders headers,
-            final String requestBody, final Map<String, String> queryParams)
+    public boolean isStreamReplyRequested(final ServerHttpRequest request, final String requestBody)
     {
 
-        final String                 serviceName           = extractServiceName(fullEndpoint);
+
+        final String                 serviceName           = extractServiceName(request);
         final IServiceHandlerFactory serviceHandlerFactory = serviceHandlerRegistry
                 .getServiceHandlerFactory(serviceName);
         serviceHandler = serviceHandlerFactory.createServiceHandler((IProxyService) this);
@@ -96,33 +93,35 @@ public class GenericProxyService implements IProxyService
         if (properties == null)
             throw new RuntimeException();
 
-        return serviceHandler.isStreamReplyRequested(headers, requestBody, queryParams);
+        return serviceHandler.isStreamReplyRequested(request, requestBody);
 
     }
 
 
     /**
-     * Main method for handling the proxy request. This method performs the entire
-     * proxy flow including resolving the handler, applying resilience mechanisms,
-     * and returning the response with custom metrics.
-     *
-     * @param fullEndpoint the full endpoint path (e.g.,
-     *                     "/openai/chat/completions").
-     * @param method       the HTTP method (GET, POST, etc.).
-     * @param headers      the HTTP headers of the incoming request.
-     * @param requestBody  the body of the incoming request.
-     * @param queryParams  the query parameters of the request.
-     * @return a Flux wrapping the HTTP response with added usage metrics.
+     * Proxies an incoming HTTP request to a target service endpoint based on the provided configuration.
+     * <p>
+     * This method handles the logic for routing requests to the appropriate service handler based on 
+     * the service name extracted from the request. It supports both standard and streaming requests, 
+     * applying provider-specific configurations, circuit breaker policies, and rate limiting as necessary.
+     * The target service URI is dynamically resolved based on the service configuration.
+     * </p>
+     * 
+     * @param request the {@link ServerHttpRequest} representing the original incoming HTTP request. 
+     *                This contains the method, headers, query parameters, and other request details.
+     * @param requestBody a {@link String} containing the body of the HTTP request. This is required for 
+     *                    POST, PUT, or other methods where the body contains meaningful data. Can be {@code null} 
+     *                    if the request does not have a body.
+     * @return a {@link Flux} that represents the proxied response, which could be a standard response 
+     *         or a stream of data in case of streaming requests. Each emitted element corresponds to 
+     *         a part of the response.
+     * @throws RuntimeException if no suitable service handler or service configuration is found for the requested service.
+     *         This includes cases such as missing service properties, invalid configurations, or unregistered handlers.
      */
-    public Flux<?> proxyRequest(final String fullEndpoint, final HttpMethod method, final HttpHeaders headers,
-            final String requestBody, final Map<String, String> queryParams)
+    public Flux<?> proxyRequest(final ServerHttpRequest request, final String requestBody)
     {
 
-        log.info(
-                "proxyRequest() received request - fullEndpoint: {}, method: {}, headers: {}, requestBody: {}, queryParams: {}",
-                fullEndpoint, method, headers, requestBody, queryParams);
-
-        String                      serviceName          = extractServiceName(fullEndpoint);
+        String                      serviceName          = extractServiceName(request);
         ServiceHandlerConfiguration serviceHandlerConfig = serviceHandlerRegistry
                 .getServiceHandlerConfiguration(serviceName);
         if (null == serviceHandlerConfig)
@@ -138,12 +137,13 @@ public class GenericProxyService implements IProxyService
         if (serviceHandler == null)
             return handleBadRequest("Service handler not found.");
 
-        boolean isStreamingRequested = serviceHandler.isStreamReplyRequested(headers, requestBody, queryParams);
-        log.debug("Streaming requested: {}", isStreamingRequested);
+        boolean isStreamingRequested = serviceHandler.isStreamReplyRequested(request, requestBody);
 
         URI targetServicePath = serviceHandlerRegistry.getTargetServiceURI(serviceName);
         if (null == targetServicePath)
             return handleBadRequest("Service has no target service URL.");
+
+        final ServerHttpRequest retargetedRequest =  RequestModifier.modifyUri(request, targetServicePath);
 
         client = configureWebClient(properties);
         try {
@@ -152,12 +152,12 @@ public class GenericProxyService implements IProxyService
                     properties.getCircuitBreakerConfiguration());
             final RateLimiter    rateLimiter    = rateLimiterManagerService.getRateLimiter(serviceName,
                     properties.getRateLimiterConfiguration());
-          
+
             return isStreamingRequested
-                    ? handleStreamingRequest(serviceHandler, targetServicePath, method, headers, requestBody,
-                            queryParams, circuitBreaker, rateLimiter)
-                    : handleStandardRequest(serviceHandler, targetServicePath, method, headers, requestBody,
-                            queryParams, circuitBreaker, rateLimiter);
+                    ? handleStreamingRequest(serviceHandler, retargetedRequest, requestBody, circuitBreaker,
+                            rateLimiter)
+                    : handleStandardRequest(serviceHandler, retargetedRequest, requestBody, circuitBreaker,
+                            rateLimiter);
         }
         catch (BeansException e) {
             return Mono.error(new RuntimeException("Handler not found for service: " + serviceName, e)).flux();
@@ -165,21 +165,25 @@ public class GenericProxyService implements IProxyService
     }
 
 
-    private Flux<?> handleBadRequest(String message)
+    /**
+     * Executes an HTTP request to the specified endpoint with the provided request details.
+     * <p>
+     * This method delegates the execution to a {@link StandardRequestHandler}, which is responsible for 
+     * handling the HTTP request using the configured WebClient and service handler. It supports dynamic 
+     * configuration of headers, query parameters, and request body.
+     * </p>
+     * 
+     * @param retargetedRequest the {@link ServerHttpRequest} representing the retargeted HTTP request. Contains headers, 
+     *                query parameters, and method details.
+     * @return a {@link Mono} containing the {@link ResponseEntity<String>} with the response from the target service.
+     *         The response includes the status code, headers, and body returned by the target service.
+     */
+    @Override
+    public Mono<ResponseEntity<String>> executeRequest(final ServerHttpRequest retargetedRequest, final String requestBody)
     {
 
-        return Mono.just(ResponseEntity.badRequest().body(message)).flux();
-    }
-
-
-    private Flux<?> handleStreamingRequest(IServiceHandler serviceHandler, URI targetServicePath, HttpMethod method,
-            HttpHeaders headers, String requestBody, Map<String, String> queryParams, CircuitBreaker circuitBreaker,
-            RateLimiter rateLimiter)
-    {
-
-        final StreamingRequestHandler streamingRequestHandler = new StreamingRequestHandler(client, serviceHandler);
-        return streamingRequestHandler.handle(targetServicePath, method, headers, requestBody, queryParams,
-                circuitBreaker, rateLimiter);
+        final StandardRequestHandler standardRequestHandler = new StandardRequestHandler(client, serviceHandler);
+        return standardRequestHandler.executeRequest(retargetedRequest, requestBody);
     }
 
 
@@ -195,44 +199,11 @@ public class GenericProxyService implements IProxyService
      * @return a Flux wrapping the HTTP streaming response body.
      */
     @Override
-    public Flux<ServerSentEvent<String>> executeStreamingRequest(final URI endpoint, final HttpMethod method,
-            final HttpHeaders headers, final String requestBody, final Map<String, String> queryParams)
+    public Flux<ServerSentEvent<String>> executeStreamingRequest(final ServerHttpRequest retargetedRequest, final String requestBody)
     {
 
         final StreamingRequestHandler streamingRequestHandler = new StreamingRequestHandler(client, serviceHandler);
-        return streamingRequestHandler.executeStreamingRequest(endpoint, method, headers, requestBody, queryParams);
-    }
-
-
-    private Flux<?> handleStandardRequest(IServiceHandler serviceHandler, URI targetServicePath, HttpMethod method,
-            HttpHeaders headers, String requestBody, Map<String, String> queryParams, CircuitBreaker circuitBreaker,
-            RateLimiter rateLimiter)
-    {
-        
-        final StandardRequestHandler standardRequestHandler = new StandardRequestHandler(client, serviceHandler);
-        return standardRequestHandler.handle(targetServicePath, method, headers, requestBody, queryParams,
-                circuitBreaker, rateLimiter);
-    }
-
-
-    /**
-     * Executes an HTTP request and returns the response as a Mono containing a
-     * String body.
-     * 
-     * @param endpoint    the target endpoint for the request.
-     * @param method      the HTTP method (GET, POST, etc.).
-     * @param headers     the HTTP headers for the request.
-     * @param requestBody the body of the request.
-     * @param queryParams query parameters to be included in the request.
-     * @return a Mono wrapping the HTTP response entity with a String body.
-     */
-    @Override
-    public Mono<ResponseEntity<String>> executeRequest(final URI endpoint, final HttpMethod method,
-            final HttpHeaders headers, final String requestBody, final Map<String, String> queryParams)
-    {
-
-        final StandardRequestHandler standardRequestHandler = new StandardRequestHandler(client, serviceHandler);
-        return standardRequestHandler.executeRequest(endpoint, method, headers, requestBody, queryParams);
+        return streamingRequestHandler.executeStreamingRequest(retargetedRequest, requestBody);
     }
 
 
@@ -268,6 +239,33 @@ public class GenericProxyService implements IProxyService
     }
 
 
+    private Flux<?> handleBadRequest(final String message)
+    {
+
+        return Mono.just(ResponseEntity.badRequest().body(message)).flux();
+    }
+
+
+    private Flux<?> handleStandardRequest(final IServiceHandler serviceHandler,
+            final ServerHttpRequest retargetedRequest, final String requestBody, final CircuitBreaker circuitBreaker,
+            final RateLimiter rateLimiter)
+    {
+
+        final StandardRequestHandler standardRequestHandler = new StandardRequestHandler(client, serviceHandler);
+        return standardRequestHandler.handle(retargetedRequest, requestBody, circuitBreaker, rateLimiter);
+    }
+
+
+    private Flux<?> handleStreamingRequest(final IServiceHandler serviceHandler,
+            final ServerHttpRequest retargetedRequest, final String requestBody, final CircuitBreaker circuitBreaker,
+            final RateLimiter rateLimiter)
+    {
+
+        final StreamingRequestHandler streamingRequestHandler = new StreamingRequestHandler(client, serviceHandler);
+        return streamingRequestHandler.handle(retargetedRequest, requestBody, circuitBreaker, rateLimiter);
+    }
+
+
     /**
      * Extracts the service name from the full endpoint path.
      * <p>
@@ -283,10 +281,12 @@ public class GenericProxyService implements IProxyService
      * @return the extracted service name, which is the same as the provided full
      *         endpoint.
      */
-    private String extractServiceName(final String fullEndpoint)
+    private String extractServiceName(final ServerHttpRequest request)
     {
 
+        final String fullEndpoint = request.getURI().getRawPath();
         return fullEndpoint;
     }
+
 
 }

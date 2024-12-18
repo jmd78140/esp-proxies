@@ -1,66 +1,75 @@
 package ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandler;
 
-import java.net.URI;
-import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import reactor.core.publisher.Flux;
+
 
 
 /**
  * Interface for handling HTTP requests in a proxy service.
  * <p>
- * This interface defines methods for setting up a proxy service, determining whether
- * a streamed response is requested, handling requests, and populating custom HTTP headers
- * specific to the service protocol.
+ * This interface defines methods for setting up a proxy service, determining
+ * whether a streamed response is requested, handling requests, and populating
+ * custom HTTP headers specific to the service protocol.
  */
-public interface IRequestHandler {
+public interface IRequestHandler
+{
 
-   
 
     /**
-     * Determines if a streamed reply is requested based on the provided HTTP headers,
-     * request body, and query parameters.
+     * Determines if a streamed reply is requested based on the provided HTTP
+     * headers, request body, and query parameters.
      * 
-     * @param headers a {@link HttpHeaders} object representing the HTTP headers of the request.
-     * @param requestBody a {@link String} representing the body of the HTTP request.
-     * @param queryParams a {@link Map} containing query parameters as key-value pairs.
-     * @return {@code true} if a streamed reply is requested; {@code false} otherwise.
+     * @param request     the incoming {@link ServerHttpRequest} to handle
+     * @param requestBody a {@link String} representing the body of the HTTP
+     *                    request.
+     * @return {@code true} if a streamed reply is requested; {@code false}
+     *         otherwise.
      */
-    boolean isStreamReplyRequested(final HttpHeaders headers,
-                                   final String requestBody, 
-                                   final Map<String, String> queryParams);
+    boolean isStreamReplyRequested(final ServerHttpRequest request, final String requestBody);
+
 
     /**
-     * Handles the given HTTP request by forwarding it to the specified endpoint.
+     * Handles the given HTTP request by applying provider-specific modifications
+     * and forwarding it to the proxy for execution.
      * <p>
-     * This method processes the request and returns a reactive {@link Flux} representing
-     * the response. The implementation should ensure that the request is correctly proxied
-     * and any required transformations are applied.
+     * This method allows for service-specific customizations of the HTTP request,
+     * such as modifying headers, query parameters, or the request body. After
+     * applying these modifications, the method delegates the execution of the
+     * request to the appropriate proxy methods for standard or streaming requests.
+     * </p>
      * 
-     * @param endpoint the {@link URI} of the target endpoint.
-     * @param method the {@link HttpMethod} representing the HTTP method of the request (e.g., GET, POST).
-     * @param headers a {@link HttpHeaders} object representing the HTTP headers of the request.
-     * @param requestBody a {@link String} representing the body of the HTTP request.
-     * @param queryParams a {@link Map} containing query parameters as key-value pairs.
-     * @return a {@link Flux} representing the response to the request.
+     * @param retargetedRequest the {@link ServerHttpRequest} representing the
+     *                          retargeted HTTP request. This includes the updated
+     *                          URI, method, headers, and query parameters.
+     * @param requestBody       a {@link String} containing the body of the HTTP
+     *                          request, or {@code null} if the request does not
+     *                          require a body.
+     * @return a {@link Flux} representing the response to the request, either as a
+     *         standard or streaming response. The exact behavior depends on the
+     *         provider-specific logic implemented.
+     * @throws RuntimeException if an error occurs during the modification or
+     *                          forwarding of the request.
      */
-    Flux<?> handleRequest(final URI endpoint, 
-                          final HttpMethod method, 
-                          final HttpHeaders headers, 
-                          final String requestBody, 
-                          final Map<String, String> queryParams);
+    Flux<?> handleRequest(final ServerHttpRequest retargetedRequest, final String requestBody);
+
 
     /**
-     * Populates the given HTTP headers with any custom fields required by the target service protocol.
+     * Populates the given HTTP headers with any custom fields required by the
+     * target service protocol.
      * <p>
-     * Implementations may modify the headers in place to add protocol-specific fields. If no custom
-     * headers are needed, this method can simply return the provided {@link HttpHeaders} unchanged.
+     * Implementations may modify the headers in place to add protocol-specific
+     * fields. If no custom headers are needed, this method can simply return the
+     * provided {@link HttpHeaders} unchanged.
      * 
-     * @param headers a {@link HttpHeaders} object representing the original HTTP headers.
-     * @return the modified {@link HttpHeaders} object, potentially including additional custom headers.
+     * @param headers a {@link HttpHeaders} object representing the original HTTP
+     *                headers.
+     * @return the modified {@link HttpHeaders} object, potentially including
+     *         additional custom headers.
      */
     HttpHeaders populateRequestCustomHeaders(final HttpHeaders headers);
+
 }

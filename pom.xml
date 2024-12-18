@@ -3,8 +3,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>ai.learningsystems.gloobermkp</groupId>
-	<artifactId>espproxies</artifactId>
+	<groupId>ai.learningsystems.gloobermkp.service-providers</groupId>
+	<artifactId>esp-proxies</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>ESP Proxies</name>
@@ -33,10 +33,12 @@
 		<!-- Plugins versions and configuration -->
 		<maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
 
-		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
 		<maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
-		<maven-compiler-plugin-java.release>20</maven-compiler-plugin-java.release>
-
+		<maven.compiler.source>20</maven.compiler.source>
+        <maven.compiler.target>20</maven.compiler.target>
+        <maven.compiler.release>20</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		
 		<!-- ! needed since Java 23 for @Slf4j annotation processing 			-->
 		<!-- Otherwise log symbol will be unknown at compile time 	 			-->
 		<!-- if not defined you can compile on command line using :  			-->
@@ -226,7 +228,7 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>${maven.compiler.plugin.version}</version>
 					<configuration>
-						<release>${maven-compiler-plugin-java.release}</release>
+						<release>${maven.compiler.release}</release>
 						<encoding>${maven.compiler.encoding}</encoding>
 					</configuration>
 				</plugin>

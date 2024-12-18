@@ -12,6 +12,7 @@ import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.service
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandlerregistry.ServiceHandlerConfiguration;
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandlerregistry.exception.ServiceHandlerConfigFileLoadException;
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandlerregistry.exception.ServiceHandlerConfigFileParseException;
+import ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completion.configurationprovider.ServiceHandlerConfigProvider;
 
 
 public class OpenAIChatCompletionPlugin extends Plugin

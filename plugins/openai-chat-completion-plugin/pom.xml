@@ -42,6 +42,11 @@
 			<artifactId>plugin-shared-interfaces</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+        <dependency>
+        	<groupId>ai.learningsystems.gloobermkp</groupId>
+        	<artifactId>external-commons</artifactId>
+        	<version>0.0.1-SNAPSHOT</version>
+        </dependency>
    </dependencies>
   
   <build>

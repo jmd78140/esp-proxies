@@ -1,21 +1,22 @@
 package ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completion;
 
-import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import ai.learningsystems.gloobermkp.espproxies.domains.share.metrics.usage.UsageMetrics;
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.proxy.IProxyService;
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandler.IServiceHandler;
+import ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completion.endofstreamdetector.EndOfStreamDetector;
+import ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completion.usagemetricssupplier.ServiceUsageMetricsSupplier;
+import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.UsageMetrics;
+import ai.learningsystems.gloobermkp.external.commons.domains.web.RequestModifier;
 import reactor.core.publisher.Flux;
 
 
@@ -24,11 +25,11 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
     @SuppressWarnings("unused")
     private static Logger log = LoggerFactory.getLogger(OpenAIChatCompletionServiceHandler.class);
     
+    private static String REQ_BODY_STREAM_OPTION_FIELD = "stream";
+    
     final private IProxyService proxyService;
     private ObjectMapper  objectMapper = new ObjectMapper();
-    @SuppressWarnings("unused")
-    private HttpHeaders   incomingHeadersBackup;
-
+    
     
     public OpenAIChatCompletionServiceHandler(IProxyService proxyService)
     {
@@ -39,23 +40,15 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
     /**
      * Read the stream field value of JSON request body
      * 
-     * @param requestBody
-     * @return the value of stream field, defaults to false if "stream" is not
-     *         present or an error occurs
+    * @param request the incoming {@link ServerHttpRequest} to handle
+     * @param requestBody a {@link String} representing the body of the HTTP request.
+     * @return {@code true} if the value of stream field of requestBody is {@code true};
+     * defaults to {@code false} if "stream" is not present or an error occurs
      */
     @Override
-    public boolean isStreamReplyRequested(HttpHeaders headers, String requestBody, Map<String, String> queryParams)
+    public boolean isStreamReplyRequested(final ServerHttpRequest request, final String requestBody)
     {
-        try {
-            JsonNode     rootNode     = objectMapper.readTree(requestBody);
-            if (rootNode.has("stream")) {
-                return rootNode.get("stream").asBoolean();
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return isStreamReplyRequested(requestBody);
     }
 
     
@@ -65,50 +58,57 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
      * 
      */
     @Override
-    public Flux<?> handleRequest(URI endpoint, HttpMethod method, HttpHeaders headers, String requestBody,
-            Map<String, String> queryParams)
+    public Flux<?> handleRequest(final ServerHttpRequest retargetedRequest, final String requestBody)
     {
 
-        // Backup incoming headers for later user if needed and
-        // populate custom headers before making the request
-        incomingHeadersBackup = headers;
-        final HttpHeaders customHeaders        = populateRequestCustomHeaders(headers);
-        final boolean     isStreamingRequested = isStreamReplyRequested(headers, requestBody, queryParams);
-
-        if (isStreamingRequested) {
-             return proxyService.executeStreamingRequest(endpoint, method, customHeaders, requestBody, queryParams);
+        ServerHttpRequest modifiedRequest = RequestModifier.modifyHeaders(retargetedRequest, headers -> {
+            HttpHeaders customHeaders = populateRequestCustomHeaders(headers);
+            // Clear previous headers data
+            headers.clear(); 
+            headers.addAll(customHeaders);
+        });
+    
+        if (isStreamReplyRequested(requestBody)) {
+             return proxyService.executeStreamingRequest(modifiedRequest, requestBody);
         }
         
-        return proxyService.executeRequest(endpoint, method, customHeaders, requestBody, queryParams).flux();
+        return proxyService.executeRequest(modifiedRequest, requestBody).flux();
     }
 
     
     @Override
-    public HttpHeaders populateRequestCustomHeaders(HttpHeaders headers)
+    public HttpHeaders populateRequestCustomHeaders(final HttpHeaders headers)
     {
 
         final HttpHeaders customHeaders = new HttpHeaders();
+
         customHeaders.setAccept(headers.getAccept());
         customHeaders.setContentType(headers.getContentType());
-        customHeaders.add("Authorization", headers.get("Authorization").get(0));
         customHeaders.setContentLength(headers.getContentLength());
+        // Add provider specific header fields as needed
+        // customHeaders.add("X-Custom-Header", "CustomValue");
+
+        if (headers.containsKey("Authorization")) {
+            customHeaders.add("Authorization", headers.getFirst("Authorization"));
+        }
+        
         return customHeaders;
     }
 
     
     @Override
-    public UsageMetrics getMetrics(String requestBody, final ResponseEntity<String> response)
+    public UsageMetrics getMetrics(final ServerHttpRequest request, final String requestBody, final ResponseEntity<String> response)
     {
 
-        return ServiceUsageMetricsProvider.getMetrics(requestBody, response);
+        return ServiceUsageMetricsSupplier.getMetrics(request, requestBody, response);
     }
 
     
     @Override
-    public UsageMetrics getStreamMetrics(String requestBody, List<String> responseChunks)
+    public UsageMetrics getMetrics(final ServerHttpRequest request, final String requestBody, List<String> responseChunks)
     {
         
-        return ServiceUsageMetricsProvider.getStreamMetrics(requestBody, responseChunks);
+        return ServiceUsageMetricsSupplier.getMetrics(request, requestBody, responseChunks);
     }
 
     
@@ -119,4 +119,18 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
         return EndOfStreamDetector.isEndOfStream(chunk);
     }
 
+    
+    private boolean isStreamReplyRequested(final String requestBody)
+    {
+        try {
+            JsonNode     rootNode     = objectMapper.readTree(requestBody);
+            if (rootNode.has(REQ_BODY_STREAM_OPTION_FIELD)) {
+                return rootNode.get(REQ_BODY_STREAM_OPTION_FIELD).asBoolean();
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

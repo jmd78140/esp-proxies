@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>ai.learningsystems.gloobermkp</groupId>
-    <artifactId>espproxies</artifactId>
+    <groupId>ai.learningsystems.gloobermkp.service-providers</groupId>
+    <artifactId>esp-proxies</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   
-  <groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
+  <groupId>ai.learningsystems.gloobermkp.service-providers.esp-proxies</groupId>
   <artifactId>plugin-shared-interfaces</artifactId>
   <name>PluginSharedInterfaces</name>
   <description>Interfaces shared between proxy and plugins</description>
@@ -18,10 +18,11 @@
         </dependency>
         
         <dependency>
-			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
-			<artifactId>domains-share</artifactId>
+			<groupId>ai.learningsystems.gloobermkp</groupId>
+			<artifactId>external-commons</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		
   </dependencies>
     
 </project>
