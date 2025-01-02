@@ -10,4 +10,9 @@ public class EndOfStreamDetector
         final boolean isEndOfStream = chunk.contains(SSE_ENDOFSTREAM_MARKER);
         return isEndOfStream;
     }
+    
+    public static String getEndOfStreamMarker() {
+        
+        return SSE_ENDOFSTREAM_MARKER;
+    }
 }

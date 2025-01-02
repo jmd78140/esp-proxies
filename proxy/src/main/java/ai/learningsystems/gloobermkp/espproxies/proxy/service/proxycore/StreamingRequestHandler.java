@@ -1,5 +1,7 @@
 package ai.learningsystems.gloobermkp.espproxies.proxy.service.proxycore;
 
+import static ai.learningsystems.gloobermkp.apigateway.domains.share.GatewayHeaderCustomFields.SERVICEREF_NOT_SET_IN_HEADER;
+import static ai.learningsystems.gloobermkp.apigateway.domains.share.GatewayHeaderCustomFields.X_GMKP_XSP_SERVICE_REF;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestBodySpec;
 
 import ai.learningsystems.gloobermkp.espproxies.plugin.shared.interfaces.servicehandler.IServiceHandler;
+import ai.learningsystems.gloobermkp.espproxies.services.share.EndOfStreamChunk;
 import ai.learningsystems.gloobermkp.external.commons.domains.metrics.technical.ResponseTime;
 import ai.learningsystems.gloobermkp.external.commons.domains.metrics.technical.TechnicalMetrics;
 import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.UsageMetrics;
@@ -64,7 +67,8 @@ public class StreamingRequestHandler
                 ? (Flux<ServerSentEvent<String>>) eventStream
                 : Flux.error(new IllegalStateException("Expected Flux<ServerSentEvent<String>>"));
 
-        return sseStream.concatMap(content -> processSSEChunk(retargetedRequest, requestBody, content, accumulatedChunks))
+        return sseStream
+                .concatMap(content -> processSSEChunk(retargetedRequest, requestBody, content, accumulatedChunks))
                 .doOnError(error -> log.error("Error receiving SSE: {}", error))
                 .doOnTerminate(() -> log.debug("Completed receiving SSE events."));
 
@@ -110,7 +114,7 @@ public class StreamingRequestHandler
     }
 
 
-    private Flux<ServerSentEvent<String>> processSSEChunk(final ServerHttpRequest request, final String requestBody,
+    private Flux<ServerSentEvent<String>> processSSEChunk(final ServerHttpRequest retargetedRequest, final String requestBody,
             ServerSentEvent<String> content, List<String> accumulatedChunks)
     {
 
@@ -119,20 +123,37 @@ public class StreamingRequestHandler
         }
 
         if (serviceHandler.isEndOfStream(content.data())) {
+
             log.debug("End Of SSE Stream detected!");
-            final UsageMetrics streamMetrics     = serviceHandler.getMetrics(request, requestBody, accumulatedChunks);
-            String             jsonStreamMetrics = streamMetrics.toJson();
+            
+            String serviceRef = SERVICEREF_NOT_SET_IN_HEADER;
+            final var serviceRefHeaderValues = retargetedRequest.getHeaders().get(X_GMKP_XSP_SERVICE_REF);
+            if( null != serviceRefHeaderValues && ! serviceRefHeaderValues.isEmpty() )
+                serviceRef = serviceRefHeaderValues.get(0);
+            final String servicePath = retargetedRequest.getPath() //
+                    .pathWithinApplication() //
+                    .value();
+
+            final String       nativeEOSMarker        = serviceHandler.getEndOfStreamMarker();
+            final UsageMetrics streamUsageMetrics     = serviceHandler.getMetrics(retargetedRequest, requestBody,
+                    accumulatedChunks);
+            final String       jsonStreamUsageMetrics = streamUsageMetrics.toJson();
 
             requestEndTime = System.currentTimeMillis();
-            technicalMetrics.addMetric("StreamResponseTime", new ResponseTime(requestStartTime, requestEndTime));
-            String jsonTechnicalMetrics = technicalMetrics.toJson();
+            technicalMetrics.addMetricToComponent(serviceRef, servicePath, new ResponseTime(requestStartTime, requestEndTime));
+            final String jsonTechnicalMetrics = technicalMetrics.toJson();
 
-            String finalChunk = "{\"type\": \"EndOfStreamChunk\", " + "\"nativeEOSMarker\": \"data: [DONE]\", "
-                    + "\"X-UsageMetrics\": \"" + jsonStreamMetrics + "\", " + "\"X-TechnicalMetrics\": \""
-                    + jsonTechnicalMetrics + "\"}";
+            // Build a substitution last chunk that will convey our Metrics data to caller
+            // as well as the original EOS Marker so caller can restore original last chunk
+            // data
+            final EndOfStreamChunk endOfStreamSubstitutionChunk = new EndOfStreamChunk(nativeEOSMarker,
+                    jsonStreamUsageMetrics, jsonTechnicalMetrics);
+            final String           finalChunk                   = endOfStreamSubstitutionChunk.toJson();
 
-            ServerSentEvent<String> modifiedEvent = ServerSentEvent.builder(finalChunk).event(content.event())
-                    .id(content.id()).build();
+            final ServerSentEvent<String> modifiedEvent = ServerSentEvent.builder(finalChunk) //
+                    .event(content.event()) //
+                    .id(content.id()) //
+                    .build();
 
             return Flux.just(modifiedEvent);
         }

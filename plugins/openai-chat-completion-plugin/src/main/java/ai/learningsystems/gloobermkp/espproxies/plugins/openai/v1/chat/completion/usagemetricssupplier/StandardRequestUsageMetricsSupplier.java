@@ -4,12 +4,12 @@ package ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completi
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import ai.learningsystems.gloobermkp.espproxies.plugin.shared.utils.HttpRequestPropertyProvider;
 import ai.learningsystems.gloobermkp.external.commons.domains.llm.ELLMEngineModel;
+import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.ReplyTokenCountUsageMetric;
+import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.RequestTokenCountUsageMetric;
 import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.ServiceLLMModelUSageMetric;
-import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.TokenCountUsageMetric;
+import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.TotalTokenCountUsageMetric;
 import ai.learningsystems.gloobermkp.external.commons.domains.metrics.usage.UsageMetrics;
 
 
@@ -36,40 +36,34 @@ public class StandardRequestUsageMetricsSupplier {
      * reply body field: replybody.usage.total_tokens
      */
     public UsageMetrics getMetrics() {
-        final ServiceLLMModelUSageMetric modelUsageMetric = extractLLMModel();
-        final TokenCountUsageMetric totalTokenUsageMetric = extractTotalTokens();
+        
+        final String servicePath = HttpRequestPropertyProvider.getServicePath(request);
+        final String serviceRef  = HttpRequestPropertyProvider.getServiceRef(request);
+        final ServiceLLMModelUSageMetric modelUsageMetric = extractRequestLLMModel();
+        final OAITokenCounters tokensCounters = extractReplyTokensCounters();
         final UsageMetrics metrics = new UsageMetrics();
 
-        metrics.addMetric(totalTokenUsageMetric.getName(), totalTokenUsageMetric);
-        metrics.addMetric(modelUsageMetric.getName(), modelUsageMetric);
+        metrics.addMetricToComponent(servicePath, serviceRef, new RequestTokenCountUsageMetric(tokensCounters.promptTokens()));
+        metrics.addMetricToComponent(servicePath, serviceRef, new ReplyTokenCountUsageMetric(tokensCounters.completionTokens()));
+        metrics.addMetricToComponent(servicePath, serviceRef, new TotalTokenCountUsageMetric(tokensCounters.totalTokens()));
+        metrics.addMetricToComponent(servicePath, serviceRef, modelUsageMetric);
 
         return metrics;
     }
 
-    private ServiceLLMModelUSageMetric extractLLMModel() {
+    
+    private OAITokenCounters extractReplyTokensCounters() {
+        
+        final ReplyBodyTokenCountersExtractor replyBodyTokenCountersExtractor = new ReplyBodyTokenCountersExtractor(response.getBody());
+        return replyBodyTokenCountersExtractor.extractTokenCounters();
+    }
+   
+    
+    private ServiceLLMModelUSageMetric extractRequestLLMModel() {
         
         final RequestBodyModelExtractor requestModelExtractor = new RequestBodyModelExtractor(requestBody);
         final ELLMEngineModel model = requestModelExtractor.getLLMModel();
         return new ServiceLLMModelUSageMetric(model);
     }
-
-    /**
-     * Extract the token count from the standard reply body.
-     */
-    private TokenCountUsageMetric extractTotalTokens() {
-        
-        try {
-            final String responseBody = response.getBody();
-            final ObjectMapper objectMapper = new ObjectMapper();
-            final JsonNode parsedResponseBody = objectMapper.readTree(responseBody);
-            final JsonNode usageNode = parsedResponseBody.path("usage");
-            final JsonNode totalTokenNode = usageNode.path("total_tokens");
-            final int totalToken = totalTokenNode.asInt();
-            return new TokenCountUsageMetric(totalToken);
-        } 
-        catch (Exception exception) {
-            throw new RuntimeException("Error extracting metrics from response", exception);
-        }
-    }
-
+    
 }

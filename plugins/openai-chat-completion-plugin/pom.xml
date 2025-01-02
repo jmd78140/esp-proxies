@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>ai.learningsystems.gloobermkp</groupId>
-    <artifactId>espproxies</artifactId>
+   <groupId>ai.learningsystems.gloobermkp.service-providers</groupId>
+	<artifactId>esp-proxies</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
  
@@ -21,6 +21,7 @@
 	  	<pf4j.version>3.13.0</pf4j.version>
 	  	<!--> Proxy / Plugin shared interfaces <-->
 	  	<plugin-shared-interfaces.version>0.0.1-SNAPSHOT</plugin-shared-interfaces.version>
+	  	<gloobermkp-shared-libs-external-commons.version>0.0.1-SNAPSHOT</gloobermkp-shared-libs-external-commons.version>
         <!--> Injected in plugin Manifest <-->
         <plugin.id>openai-chat-completion-plugin</plugin.id>
         <plugin.class>ai.learningsystems.gloobermkp.espproxies.plugins.openai.v1.chat.completion.OpenAIChatCompletionPlugin</plugin.class>
@@ -38,13 +39,22 @@
         </dependency>
         
         <dependency>
-			<groupId>ai.learningsystems.gloobermkp.espproxies</groupId>
-			<artifactId>plugin-shared-interfaces</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+ 			<groupId>ai.learningsystems.gloobermkp.service-providers.esp-proxies</groupId>
+  			<artifactId>plugin-shared-interfaces</artifactId>
+  		    <version>${plugin-shared-interfaces.version}</version>
 		</dependency>
+        
+         <dependency>
+			<groupId>ai.learningsystems.gloobermkp.shared-libs</groupId>
+			<artifactId>external-commons</artifactId>
+			<version>${gloobermkp-shared-libs-external-commons.version}</version>
+		</dependency>
+		
         <dependency>
-        	<groupId>ai.learningsystems.gloobermkp</groupId>
-        	<artifactId>external-commons</artifactId>
+        	<groupId>
+        		ai.learningsystems.gloobermkp.service-providers.esp-proxies
+        	</groupId>
+        	<artifactId>plugin-shared-interfaces</artifactId>
         	<version>0.0.1-SNAPSHOT</version>
         </dependency>
    </dependencies>

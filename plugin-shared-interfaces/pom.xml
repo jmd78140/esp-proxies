@@ -2,14 +2,19 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>ai.learningsystems.gloobermkp.service-providers</groupId>
-    <artifactId>esp-proxies</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+	<artifactId>esp-proxies</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
   </parent>
   
   <groupId>ai.learningsystems.gloobermkp.service-providers.esp-proxies</groupId>
   <artifactId>plugin-shared-interfaces</artifactId>
   <name>PluginSharedInterfaces</name>
   <description>Interfaces shared between proxy and plugins</description>
+  
+  <properties>
+	  <gloobermkp-shared-libs-external-commons.version>0.0.1-SNAPSHOT</gloobermkp-shared-libs-external-commons.version>
+  </properties>
+  
   
   <dependencies>
         <dependency>
@@ -18,9 +23,9 @@
         </dependency>
         
         <dependency>
-			<groupId>ai.learningsystems.gloobermkp</groupId>
+			<groupId>ai.learningsystems.gloobermkp.shared-libs</groupId>
 			<artifactId>external-commons</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>${gloobermkp-shared-libs-external-commons.version}</version>
 		</dependency>
 		
   </dependencies>

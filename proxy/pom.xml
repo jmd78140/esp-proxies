@@ -14,19 +14,22 @@
 	<name>Proxy</name>
 	<description>Implements the proxy core and services handler plugins loader</description>
 
-	<!-- Properties defining project variables, including Java and Spring
-	versions -->
 	<properties>
+		<!-- Spring -->
 		<spring-cloud.version>2024.0.0-RC1</spring-cloud.version>
-		<!-- Managed version for Resilience4j, commented out as it is managed elsewhere -->
-		<!-- spring-starter-resilience4j.version>3.2.0-RC1<spring-starter-resilience4j.version -->
 		<spring-webflux.version>6.2.0</spring-webflux.version>
-		<pf4j.version>3.13.0</pf4j.version>
 		<spring-starter-actuator.version>3.4.0</spring-starter-actuator.version>
 		<spring-boot-maven-plugin.version>3.4.0</spring-boot-maven-plugin.version>
+	
+		<!-- Plugin Framework -->
+		<pf4j.version>3.13.0</pf4j.version>
+		
+		<!-- Gloober mkp Shared Definitions -->
+		<gloobermkp-shared-libs-internal-commons.version>0.0.1-SNAPSHOT</gloobermkp-shared-libs-internal-commons.version>
+		<gloobermkp-shared-libs-external-commons.version>0.0.1-SNAPSHOT</gloobermkp-shared-libs-external-commons.version>
+	
 	</properties>
 
-	<!-- Dependencies section -->
 	<dependencies>
 
 		<!--
@@ -60,7 +63,13 @@
 		<dependency>
 			<groupId>ai.learningsystems.gloobermkp.shared-libs</groupId>
 			<artifactId>external-commons</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>${gloobermkp-shared-libs-external-commons.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>ai.learningsystems.gloobermkp.shared-libs</groupId>
+			<artifactId>internal-commons</artifactId>
+			<version>${gloobermkp-shared-libs-internal-commons.version}</version>
 		</dependency>
 
 		<dependency>
@@ -68,6 +77,8 @@
 			<artifactId>plugin-shared-interfaces</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		
+		
 	</dependencies>
 
 	<!-- Dependency Management section for Spring Cloud dependencies -->

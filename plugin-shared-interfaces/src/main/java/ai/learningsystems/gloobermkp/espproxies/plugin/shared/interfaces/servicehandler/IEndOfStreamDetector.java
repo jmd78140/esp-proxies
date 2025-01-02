@@ -17,4 +17,11 @@ public interface IEndOfStreamDetector {
      * @return {@code true} if the chunk contains the end-of-stream marker, {@code false} otherwise.
      */
     boolean isEndOfStream(String chunk);
+    
+    
+    /**
+     * This allows Proxy to produce a customized End Of Stream chunk.  
+     * @return a {@link String} representing the End Of Stream Marker used by Provider.
+     */
+    String getEndOfStreamMarker();
 }

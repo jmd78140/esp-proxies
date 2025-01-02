@@ -25,8 +25,8 @@ public class ServiceUsageMetricsSupplier
     public static UsageMetrics getMetrics(final ServerHttpRequest request, final String requestBody,
             final ResponseEntity<String> response)
     {
-        final StandardRequestUsageMetricsSupplier metricsProvider = new StandardRequestUsageMetricsSupplier(request, requestBody, response);
-        return metricsProvider.getMetrics();
+        final StandardRequestUsageMetricsSupplier metricsSupplier = new StandardRequestUsageMetricsSupplier(request, requestBody, response);
+        return metricsSupplier.getMetrics();
     }
     
     
@@ -37,8 +37,8 @@ public class ServiceUsageMetricsSupplier
     public static UsageMetrics getMetrics(final ServerHttpRequest request, final String requestBody,
             List<String> responseChunks)
     {
-        final StreamRequestUsageMetricsProvider metricsProvider = new StreamRequestUsageMetricsProvider(request, requestBody, responseChunks);
-        return metricsProvider.getMetrics();
+        final StreamRequestUsageMetricsSupplier metricsSupplier = new StreamRequestUsageMetricsSupplier(request, requestBody, responseChunks);
+        return metricsSupplier.getMetrics();
     }
     
 }

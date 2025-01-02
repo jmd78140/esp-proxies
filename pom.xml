@@ -49,8 +49,6 @@
 	</properties>
 
 	<modules>
-		<module>domains-share</module>
-		<!-- module>plugin-api</module -->
 		<module>proxy</module>
 		<module>plugin-shared-interfaces</module>
 	</modules>

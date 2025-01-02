@@ -52,6 +52,7 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
     }
 
     
+    
     /**
      * This methid allow request and reply customization before callbacking proxyService 
      * to execute the request in the correponding mode.
@@ -75,6 +76,7 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
         return proxyService.executeRequest(modifiedRequest, requestBody).flux();
     }
 
+  
     
     @Override
     public HttpHeaders populateRequestCustomHeaders(final HttpHeaders headers)
@@ -95,6 +97,7 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
         return customHeaders;
     }
 
+   
     
     @Override
     public UsageMetrics getMetrics(final ServerHttpRequest request, final String requestBody, final ResponseEntity<String> response)
@@ -119,6 +122,13 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
         return EndOfStreamDetector.isEndOfStream(chunk);
     }
 
+
+    @Override
+    public String getEndOfStreamMarker() 
+    {
+        return EndOfStreamDetector.getEndOfStreamMarker();
+    }
+    
     
     private boolean isStreamReplyRequested(final String requestBody)
     {
@@ -133,4 +143,8 @@ public class OpenAIChatCompletionServiceHandler implements IServiceHandler
         }
         return false;
     }
+
+
+   
+   
 }
